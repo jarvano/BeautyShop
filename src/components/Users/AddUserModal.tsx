@@ -45,16 +45,18 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name
+              Display Name
             </label>
             <input
               type="text"
               name="name"
               required
+              placeholder="Enter the user's display name"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={formData.name}
               onChange={handleChange}
             />
+            <p className="text-xs text-gray-500 mt-1">This name will be displayed throughout the system</p>
           </div>
 
           <div>
@@ -65,10 +67,12 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
               type="email"
               name="email"
               required
+              placeholder="Enter email address"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={formData.email}
               onChange={handleChange}
             />
+            <p className="text-xs text-gray-500 mt-1">This will be used for login</p>
           </div>
 
           <div>
@@ -80,6 +84,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
               name="password"
               required
               minLength={6}
+              placeholder="Enter a secure password"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={formData.password}
               onChange={handleChange}
@@ -89,7 +94,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Role
+              User Role
             </label>
             <select
               name="role"
@@ -101,6 +106,10 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
               <option value="employee">Employee</option>
               <option value="admin">Administrator</option>
             </select>
+            <p className="text-xs text-gray-500 mt-1">
+              <span className="font-medium">Employee:</span> Can view and add sales only<br/>
+              <span className="font-medium">Administrator:</span> Full access to all features
+            </p>
           </div>
 
           <div className="flex space-x-3 pt-4">

@@ -50,46 +50,44 @@ const UsersManagement: React.FC = () => {
 
   const handleAddUser = async (userData: { name: string; email: string; password: string; role: 'admin' | 'employee' }) => {
     try {
-      // Create user in Supabase Auth using the admin API
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // Create user in Supabase Auth with metadata
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: userData.email,
         password: userData.password,
-        options: {
-          data: {
-            name: userData.name,
-            role: userData.role
-          }
-        }
+        user_metadata: {
+          name: userData.name,
+          role: userData.role
+        },
+        email_confirm: true
       });
 
-      if (authError) {
-        // If signup fails, try admin create (requires service role key)
-        const { data: adminData, error: adminError } = await supabase.auth.admin.createUser({
-          email: userData.email,
-          password: userData.password,
-          user_metadata: {
-            name: userData.name,
-            role: userData.role
-          },
-          email_confirm: true
-        });
-        
-        if (adminError) throw adminError;
-      }
+      if (authError) throw authError;
 
-      // If we used regular signup, we need to manually create the profile
-      if (!authError && authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            name: userData.name,
-            role: userData.role
-          });
+      // Ensure profile is created with correct data (fallback if trigger fails)
+      if (authData.user) {
+        // Wait a moment for the trigger to execute
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          // The trigger should handle this, but if it fails, we handle it manually
+        // Check if profile was created by trigger
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+        
+        if (!existingProfile) {
+          // Create profile manually if trigger didn't work
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: authData.user.id,
+              name: userData.name,
+              role: userData.role
+            });
+          
+          if (profileError) {
+            console.error('Manual profile creation error:', profileError);
+          }
         }
       }
 
@@ -109,18 +107,9 @@ const UsersManagement: React.FC = () => {
 
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        // Try to delete using admin API first
-        const { error: adminError } = await supabase.auth.admin.deleteUser(userId);
-        
-        if (adminError) {
-          // If admin delete fails, delete the profile directly
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .delete()
-            .eq('id', userId);
-          
-          if (profileError) throw profileError;
-        }
+        // Delete user using admin API (this will cascade delete the profile)
+        const { error } = await supabase.auth.admin.deleteUser(userId);
+        if (error) throw error;
 
         await loadUsers();
       } catch (error) {
