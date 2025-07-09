@@ -9,7 +9,8 @@ import {
   LogOut, 
   Sparkles,
   BarChart3,
-  User
+  User,
+  Home
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -23,10 +24,13 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
   const { user, logout } = useAuth();
 
   const navigation = [
+    { name: 'Dashboard', icon: Home, key: 'dashboard' },
     { name: 'Sales', icon: ShoppingCart, key: 'sales' },
-    { name: 'Inventory', icon: Package, key: 'inventory' },
-    { name: 'Reports', icon: BarChart3, key: 'reports' },
-    ...(user?.role === 'admin' ? [{ name: 'Users', icon: Users, key: 'users' }] : [])
+    ...(user?.role === 'admin' ? [
+      { name: 'Inventory', icon: Package, key: 'inventory' },
+      { name: 'Users', icon: Users, key: 'users' }
+    ] : []),
+    { name: 'Reports', icon: BarChart3, key: 'reports' }
   ];
 
   return (
@@ -45,7 +49,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between h-16 px-6 bg-gradient-to-r from-purple-600 to-pink-600">
+        <div className="flex items-center justify-between h-16 px-6 bg-gradient-to-r from-pink-500 to-purple-600">
           <div className="flex items-center">
             <Sparkles className="w-8 h-8 text-white" />
             <span className="ml-2 text-xl font-bold text-white">Beauty Shop</span>
@@ -69,7 +73,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
                 }}
                 className={`w-full flex items-center px-4 py-3 text-left text-sm font-medium rounded-lg transition-colors ${
                   currentPage === item.key
-                    ? 'bg-purple-100 text-purple-700 border-r-4 border-purple-600'
+                    ? 'bg-pink-100 text-pink-700 border-r-4 border-pink-600'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
@@ -83,8 +87,8 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
         {/* User info and logout */}
         <div className="absolute bottom-0 w-full p-4 border-t">
           <div className="flex items-center mb-3">
-            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-purple-600" />
+            <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">
+              <User className="w-4 h-4 text-pink-600" />
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-700">{user?.name}</p>

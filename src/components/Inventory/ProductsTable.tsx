@@ -51,36 +51,34 @@ const ProductsTable: React.FC<ProductsTableProps> = ({ products, onEdit, onDelet
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {products.map((product) => (
-              <tr key={product.id} className="hover:bg-gray-50">
+              <tr 
+                key={product.id} 
+                className={`hover:bg-gray-50 ${product.stock_qty < 5 ? 'bg-yellow-50' : ''}`}
+              >
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                    {product.description && (
-                      <div className="text-sm text-gray-500">{product.description}</div>
-                    )}
-                  </div>
+                  <div className="text-sm font-medium text-gray-900">{product.name}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                  <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-pink-100 text-pink-800">
                     {product.category}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  ${product.costPrice.toFixed(2)}
+                  ${product.cost_price.toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  ${product.sellingPrice.toFixed(2)}
+                  ${product.selling_price.toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {product.stock}
+                  {product.stock_qty}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {product.stock === 0 ? (
+                  {product.stock_qty === 0 ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                       <AlertTriangle className="w-3 h-3 mr-1" />
                       Out of Stock
                     </span>
-                  ) : product.stock <= product.lowStockThreshold ? (
+                  ) : product.stock_qty < 5 ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                       <AlertTriangle className="w-3 h-3 mr-1" />
                       Low Stock
@@ -96,7 +94,7 @@ const ProductsTable: React.FC<ProductsTableProps> = ({ products, onEdit, onDelet
                     <div className="flex space-x-2">
                       <button
                         onClick={() => onEdit(product)}
-                        className="text-purple-600 hover:text-purple-900 p-1"
+                        className="text-pink-600 hover:text-pink-900 p-1"
                       >
                         <Edit className="w-4 h-4" />
                       </button>

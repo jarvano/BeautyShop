@@ -1,56 +1,46 @@
 export interface User {
   id: string;
-  username: string;
-  password: string;
-  role: 'admin' | 'employee';
-  name: string;
   email: string;
-  createdAt: string;
+  name: string;
+  role: 'admin' | 'employee';
+  created_at: string;
 }
 
 export interface Product {
   id: string;
   name: string;
   category: string;
-  costPrice: number;
-  sellingPrice: number;
-  stock: number;
-  description?: string;
-  lowStockThreshold: number;
-  createdAt: string;
-  updatedAt: string;
+  stock_qty: number;
+  cost_price: number;
+  selling_price: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Sale {
   id: string;
-  productId: string;
-  productName: string;
+  product_id: string;
+  product_name: string;
   quantity: number;
-  unitPrice: number;
-  totalAmount: number;
-  paymentMethod: 'cash' | 'card' | 'mobile';
-  employeeId: string;
-  employeeName: string;
+  amount: number;
   date: string;
-  createdAt: string;
+  employee_id: string;
+  employee_name: string;
+  created_at: string;
 }
 
 export interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 export interface SalesReport {
   totalRevenue: number;
   totalItems: number;
   totalSales: number;
-  paymentBreakdown: {
-    cash: number;
-    card: number;
-    mobile: number;
-  };
   topProducts: Array<{
     name: string;
     quantity: number;

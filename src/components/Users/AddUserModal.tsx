@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { X, User } from 'lucide-react';
-import { User as UserType } from '../../types';
 
 interface AddUserModalProps {
   onClose: () => void;
-  onSave: (user: Omit<UserType, 'id' | 'createdAt'>) => void;
+  onSave: (user: { name: string; email: string; password: string; role: 'admin' | 'employee' }) => void;
 }
 
 const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: '',
-    username: '',
     email: '',
     password: '',
     role: 'employee' as 'admin' | 'employee'
@@ -33,7 +31,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <User className="w-6 h-6 text-purple-600 mr-2" />
+            <User className="w-6 h-6 text-pink-600 mr-2" />
             <h2 className="text-xl font-bold text-gray-900">Add New User</h2>
           </div>
           <button
@@ -53,22 +51,8 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
               type="text"
               name="name"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={formData.name}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Username
-            </label>
-            <input
-              type="text"
-              name="username"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              value={formData.username}
               onChange={handleChange}
             />
           </div>
@@ -81,7 +65,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
               type="email"
               name="email"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={formData.email}
               onChange={handleChange}
             />
@@ -95,7 +79,8 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
               type="password"
               name="password"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              minLength={6}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={formData.password}
               onChange={handleChange}
             />
@@ -108,7 +93,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
             <select
               name="role"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={formData.role}
               onChange={handleChange}
             >
@@ -127,7 +112,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
             >
               Add User
             </button>

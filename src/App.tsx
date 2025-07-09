@@ -9,8 +9,16 @@ import ReportsManagement from './components/Reports/ReportsManagement';
 import UsersManagement from './components/Users/UsersManagement';
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-600"></div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Login />;
@@ -21,7 +29,7 @@ const AppContent: React.FC = () => {
       case 'sales':
         return <SalesManagement />;
       case 'inventory':
-        return <InventoryManagement />;
+        return user?.role === 'admin' ? <InventoryManagement /> : <Dashboard />;
       case 'reports':
         return <ReportsManagement />;
       case 'users':

@@ -4,7 +4,7 @@ import { Product, Sale, User } from '../../types';
 
 interface AddSaleModalProps {
   onClose: () => void;
-  onSave: (sale: Omit<Sale, 'id' | 'createdAt'>) => void;
+  onSave: (sale: Omit<Sale, 'id' | 'created_at'>) => void;
   products: Product[];
   currentUser: User;
 }
@@ -12,7 +12,6 @@ interface AddSaleModalProps {
 const AddSaleModal: React.FC<AddSaleModalProps> = ({ onClose, onSave, products, currentUser }) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'mobile'>('cash');
 
   const handleProductSelect = (productId: string) => {
     const product = products.find(p => p.id === productId);
@@ -23,31 +22,29 @@ const AddSaleModal: React.FC<AddSaleModalProps> = ({ onClose, onSave, products, 
     e.preventDefault();
     if (!selectedProduct) return;
 
-    const totalAmount = selectedProduct.sellingPrice * quantity;
+    const totalAmount = selectedProduct.selling_price * quantity;
     
-    const saleData: Omit<Sale, 'id' | 'createdAt'> = {
-      productId: selectedProduct.id,
-      productName: selectedProduct.name,
+    const saleData: Omit<Sale, 'id' | 'created_at'> = {
+      product_id: selectedProduct.id,
+      product_name: selectedProduct.name,
       quantity,
-      unitPrice: selectedProduct.sellingPrice,
-      totalAmount,
-      paymentMethod,
-      employeeId: currentUser.id,
-      employeeName: currentUser.name,
-      date: new Date().toISOString()
+      amount: totalAmount,
+      date: new Date().toISOString(),
+      employee_id: currentUser.id,
+      employee_name: currentUser.name
     };
 
     onSave(saleData);
   };
 
-  const isValidQuantity = selectedProduct ? quantity <= selectedProduct.stock : false;
+  const isValidQuantity = selectedProduct ? quantity <= selectedProduct.stock_qty : false;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <ShoppingCart className="w-6 h-6 text-purple-600 mr-2" />
+            <ShoppingCart className="w-6 h-6 text-pink-600 mr-2" />
             <h2 className="text-xl font-bold text-gray-900">Add New Sale</h2>
           </div>
           <button
@@ -65,23 +62,23 @@ const AddSaleModal: React.FC<AddSaleModalProps> = ({ onClose, onSave, products, 
             </label>
             <select
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               onChange={(e) => handleProductSelect(e.target.value)}
             >
               <option value="">Select a product</option>
-              {products.filter(p => p.stock > 0).map(product => (
+              {products.filter(p => p.stock_qty > 0).map(product => (
                 <option key={product.id} value={product.id}>
-                  {product.name} - ${product.sellingPrice} (Stock: {product.stock})
+                  {product.name} - ${product.selling_price} (Stock: {product.stock_qty})
                 </option>
               ))}
             </select>
           </div>
 
           {selectedProduct && (
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <h3 className="font-medium text-purple-900">{selectedProduct.name}</h3>
-              <p className="text-sm text-purple-700">
-                Price: ${selectedProduct.sellingPrice} | Available: {selectedProduct.stock} units
+            <div className="bg-pink-50 p-4 rounded-lg">
+              <h3 className="font-medium text-pink-900">{selectedProduct.name}</h3>
+              <p className="text-sm text-pink-700">
+                Price: ${selectedProduct.selling_price} | Available: {selectedProduct.stock_qty} units
               </p>
             </div>
           )}
@@ -93,41 +90,25 @@ const AddSaleModal: React.FC<AddSaleModalProps> = ({ onClose, onSave, products, 
             <input
               type="number"
               min="1"
-              max={selectedProduct?.stock || 1}
+              max={selectedProduct?.stock_qty || 1}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={quantity}
               onChange={(e) => setQuantity(parseInt(e.target.value))}
             />
-            {selectedProduct && quantity > selectedProduct.stock && (
+            {selectedProduct && quantity > selectedProduct.stock_qty && (
               <p className="text-red-600 text-sm mt-1">
-                Quantity exceeds available stock ({selectedProduct.stock})
+                Quantity exceeds available stock ({selectedProduct.stock_qty})
               </p>
             )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Payment Method
-            </label>
-            <select
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'card' | 'mobile')}
-            >
-              <option value="cash">Cash</option>
-              <option value="card">Card</option>
-              <option value="mobile">Mobile Payment</option>
-            </select>
           </div>
 
           {selectedProduct && (
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex justify-between items-center">
                 <span className="font-medium text-gray-900">Total Amount:</span>
-                <span className="text-xl font-bold text-purple-600">
-                  ${(selectedProduct.sellingPrice * quantity).toFixed(2)}
+                <span className="text-xl font-bold text-pink-600">
+                  ${(selectedProduct.selling_price * quantity).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -144,7 +125,7 @@ const AddSaleModal: React.FC<AddSaleModalProps> = ({ onClose, onSave, products, 
             <button
               type="submit"
               disabled={!selectedProduct || !isValidQuantity}
-              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Add Sale
             </button>

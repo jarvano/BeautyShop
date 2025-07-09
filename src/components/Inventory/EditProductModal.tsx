@@ -5,37 +5,33 @@ import { Product } from '../../types';
 interface EditProductModalProps {
   product: Product;
   onClose: () => void;
-  onSave: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSave: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => void;
 }
 
 const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: product.name,
     category: product.category,
-    costPrice: product.costPrice.toString(),
-    sellingPrice: product.sellingPrice.toString(),
-    stock: product.stock.toString(),
-    description: product.description || '',
-    lowStockThreshold: product.lowStockThreshold.toString()
+    cost_price: product.cost_price.toString(),
+    selling_price: product.selling_price.toString(),
+    stock_qty: product.stock_qty.toString()
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
+    const productData: Omit<Product, 'id' | 'created_at' | 'updated_at'> = {
       name: formData.name,
       category: formData.category,
-      costPrice: parseFloat(formData.costPrice),
-      sellingPrice: parseFloat(formData.sellingPrice),
-      stock: parseInt(formData.stock),
-      description: formData.description,
-      lowStockThreshold: parseInt(formData.lowStockThreshold)
+      cost_price: parseFloat(formData.cost_price),
+      selling_price: parseFloat(formData.selling_price),
+      stock_qty: parseInt(formData.stock_qty)
     };
 
     onSave(productData);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -58,7 +54,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
       <div className="bg-white rounded-lg max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <Package className="w-6 h-6 text-purple-600 mr-2" />
+            <Package className="w-6 h-6 text-pink-600 mr-2" />
             <h2 className="text-xl font-bold text-gray-900">Edit Product</h2>
           </div>
           <button
@@ -78,7 +74,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
               type="text"
               name="name"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={formData.name}
               onChange={handleChange}
             />
@@ -91,7 +87,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
             <select
               name="category"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={formData.category}
               onChange={handleChange}
             >
@@ -109,12 +105,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
               </label>
               <input
                 type="number"
-                name="costPrice"
+                name="cost_price"
                 step="0.01"
                 min="0"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                value={formData.costPrice}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                value={formData.cost_price}
                 onChange={handleChange}
               />
             </div>
@@ -124,42 +120,12 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
               </label>
               <input
                 type="number"
-                name="sellingPrice"
+                name="selling_price"
                 step="0.01"
                 min="0"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                value={formData.sellingPrice}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Stock Quantity
-              </label>
-              <input
-                type="number"
-                name="stock"
-                min="0"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                value={formData.stock}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Low Stock Alert
-              </label>
-              <input
-                type="number"
-                name="lowStockThreshold"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                value={formData.lowStockThreshold}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                value={formData.selling_price}
                 onChange={handleChange}
               />
             </div>
@@ -167,13 +133,15 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description (Optional)
+              Stock Quantity
             </label>
-            <textarea
-              name="description"
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              value={formData.description}
+            <input
+              type="number"
+              name="stock_qty"
+              min="0"
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              value={formData.stock_qty}
               onChange={handleChange}
             />
           </div>
@@ -188,7 +156,7 @@ const EditProductModal: React.FC<EditProductModalProps> = ({ product, onClose, o
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
             >
               Update Product
             </button>

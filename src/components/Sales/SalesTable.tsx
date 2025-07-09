@@ -1,38 +1,11 @@
 import React from 'react';
 import { Sale } from '../../types';
-import { CreditCard, Smartphone, Banknote } from 'lucide-react';
 
 interface SalesTableProps {
   sales: Sale[];
 }
 
 const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
-  const getPaymentIcon = (method: string) => {
-    switch (method) {
-      case 'cash':
-        return <Banknote className="w-4 h-4 text-green-600" />;
-      case 'card':
-        return <CreditCard className="w-4 h-4 text-blue-600" />;
-      case 'mobile':
-        return <Smartphone className="w-4 h-4 text-purple-600" />;
-      default:
-        return null;
-    }
-  };
-
-  const getPaymentColor = (method: string) => {
-    switch (method) {
-      case 'cash':
-        return 'bg-green-100 text-green-800';
-      case 'card':
-        return 'bg-blue-100 text-blue-800';
-      case 'mobile':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   if (sales.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
@@ -57,13 +30,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
                 Quantity
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Unit Price
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Payment
+                Amount
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Employee
@@ -77,25 +44,16 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
                   {new Date(sale.date).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{sale.productName}</div>
+                  <div className="text-sm font-medium text-gray-900">{sale.product_name}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {sale.quantity}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  ${sale.unitPrice.toFixed(2)}
-                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  ${sale.totalAmount.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentColor(sale.paymentMethod)}`}>
-                    {getPaymentIcon(sale.paymentMethod)}
-                    <span className="ml-1 capitalize">{sale.paymentMethod}</span>
-                  </span>
+                  ${sale.amount.toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {sale.employeeName}
+                  {sale.employee_name}
                 </td>
               </tr>
             ))}

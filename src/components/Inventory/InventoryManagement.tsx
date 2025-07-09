@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, AlertTriangle, Package } from 'lucide-react';
 import { Product } from '../../types';
-import { getProducts, saveProducts } from '../../utils/storage';
-import { generateId } from '../../utils/storage';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import AddProductModal from './AddProductModal';
 import EditProductModal from './EditProductModal';
@@ -17,6 +16,7 @@ const InventoryManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [stockFilter, setStockFilter] = useState('');
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -27,9 +27,20 @@ const InventoryManagement: React.FC = () => {
     filterProducts();
   }, [products, searchTerm, categoryFilter, stockFilter]);
 
-  const loadProducts = () => {
-    const productsData = getProducts();
-    setProducts(productsData);
+  const loadProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filterProducts = () => {
@@ -47,52 +58,67 @@ const InventoryManagement: React.FC = () => {
     }
 
     if (stockFilter === 'low') {
-      filtered = filtered.filter(product => product.stock <= product.lowStockThreshold);
+      filtered = filtered.filter(product => product.stock_qty < 5);
     } else if (stockFilter === 'out') {
-      filtered = filtered.filter(product => product.stock === 0);
+      filtered = filtered.filter(product => product.stock_qty === 0);
     }
 
     setFilteredProducts(filtered);
   };
 
-  const handleAddProduct = (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newProduct: Product = {
-      ...productData,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+  const handleAddProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .insert([productData])
+        .select()
+        .single();
 
-    const updatedProducts = [...products, newProduct];
-    setProducts(updatedProducts);
-    saveProducts(updatedProducts);
-    setShowAddModal(false);
+      if (error) throw error;
+
+      await loadProducts();
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('Error adding product:', error);
+      alert('Error adding product. Please try again.');
+    }
   };
 
-  const handleEditProduct = (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleEditProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editingProduct) return;
 
-    const updatedProduct: Product = {
-      ...editingProduct,
-      ...productData,
-      updatedAt: new Date().toISOString()
-    };
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update(productData)
+        .eq('id', editingProduct.id);
 
-    const updatedProducts = products.map(p => 
-      p.id === editingProduct.id ? updatedProduct : p
-    );
+      if (error) throw error;
 
-    setProducts(updatedProducts);
-    saveProducts(updatedProducts);
-    setShowEditModal(false);
-    setEditingProduct(null);
+      await loadProducts();
+      setShowEditModal(false);
+      setEditingProduct(null);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      alert('Error updating product. Please try again.');
+    }
   };
 
-  const handleDeleteProduct = (productId: string) => {
+  const handleDeleteProduct = async (productId: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      const updatedProducts = products.filter(p => p.id !== productId);
-      setProducts(updatedProducts);
-      saveProducts(updatedProducts);
+      try {
+        const { error } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', productId);
+
+        if (error) throw error;
+
+        await loadProducts();
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        alert('Error deleting product. Please try again.');
+      }
     }
   };
 
@@ -102,8 +128,16 @@ const InventoryManagement: React.FC = () => {
   };
 
   const categories = [...new Set(products.map(p => p.category))];
-  const lowStockItems = products.filter(p => p.stock <= p.lowStockThreshold);
-  const outOfStockItems = products.filter(p => p.stock === 0);
+  const lowStockItems = products.filter(p => p.stock_qty < 5);
+  const outOfStockItems = products.filter(p => p.stock_qty === 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -111,7 +145,7 @@ const InventoryManagement: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
         <button
           onClick={() => setShowAddModal(true)}
-          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Product
@@ -179,13 +213,13 @@ const InventoryManagement: React.FC = () => {
             <input
               type="text"
               placeholder="Search products..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <select
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
           >
@@ -195,7 +229,7 @@ const InventoryManagement: React.FC = () => {
             ))}
           </select>
           <select
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
             value={stockFilter}
             onChange={(e) => setStockFilter(e.target.value)}
           >
