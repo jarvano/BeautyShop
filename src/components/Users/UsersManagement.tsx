@@ -29,16 +29,12 @@ const UsersManagement: React.FC = () => {
 
       if (error) throw error;
 
-      // Get user emails from auth.users
-      const usersWithEmails = await Promise.all(
-        (data || []).map(async (profile) => {
-          const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
-          return {
-            ...profile,
-            email: authUser.user?.email || ''
-          };
-        })
-      );
+      // For now, we'll show users without emails since we can't access auth.users directly
+      // In a production app, you'd need to store emails in profiles or use a server function
+      const usersWithEmails = (data || []).map(profile => ({
+        ...profile,
+        email: 'Email not available' // Placeholder - in production, store email in profiles
+      }));
 
       setUsers(usersWithEmails);
     } catch (error) {
@@ -50,11 +46,57 @@ const UsersManagement: React.FC = () => {
 
   const handleAddUser = async (userData: { name: string; email: string; password: string; role: 'admin' | 'employee' }) => {
     try {
-      // Create user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Create user using signUp (this will work in most cases)
+      const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
-        user_metadata: {
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      // The profile should be created automatically by the trigger
+      // Wait a moment for the trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      await loadUsers();
+      setShowAddModal(false);
+      alert('User created successfully! They can now log in with their credentials.');
+    } catch (error) {
+      console.error('Error adding user:', error);
+      alert(`Error adding user: ${error.message || 'Please try again.'}`);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (userId === currentUser?.id) {
+      alert('You cannot delete your own account');
+      return;
+    }
+
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        // Delete the profile (this will cascade due to foreign key)
+        const { error } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', userId);
+        
+        if (error) throw error;
+
+        await loadUsers();
+        alert('User deleted successfully.');
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        alert(`Error deleting user: ${error.message || 'Please try again.'}`);
+      }
+    }
+  };
           name: userData.name,
           role: userData.role
         }
@@ -182,7 +224,9 @@ const UsersManagement: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.email}
+                    <span className="text-gray-400 italic">
+                      {user.email === 'Email not available' ? 'Stored in Supabase Auth' : user.email}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${

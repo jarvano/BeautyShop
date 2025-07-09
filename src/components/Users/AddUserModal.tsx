@@ -84,6 +84,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
               value={formData.password}
               onChange={handleChange}
             />
+            <p className="text-xs text-gray-500 mt-1">Password must be at least 6 characters long</p>
           </div>
 
           <div>
