@@ -23,6 +23,7 @@ export interface Sale {
   product_name: string;
   quantity: number;
   amount: number;
+  payment_method: 'cash' | 'card' | 'mobile';
   date: string;
   employee_id: string;
   employee_name: string;
@@ -46,4 +47,9 @@ export interface SalesReport {
     quantity: number;
     revenue: number;
   }>;
+  paymentBreakdown: {
+    cash: number;
+    card: number;
+    mobile: number;
+  };
 }

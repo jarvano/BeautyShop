@@ -109,12 +109,16 @@ const Login: React.FC = () => {
           </div>
         </form>
 
-        {/* Demo Info */}
+        {/* Demo Credentials */}
         <div className="bg-white p-4 rounded-lg shadow-md border border-pink-100">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Demo Information:</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Demo Credentials:</h3>
           <div className="text-sm text-gray-600 space-y-2">
-            <p>Please set up your Supabase database and create user accounts through the Supabase dashboard.</p>
-            <p>Make sure to add users to the profiles table with appropriate roles (admin/employee).</p>
+            <div>
+              <strong>Admin:</strong> admin@beautyshop.com / admin123
+            </div>
+            <div>
+              <strong>Employee:</strong> employee1@beautyshop.com / emp123
+            </div>
           </div>
         </div>
       </div>

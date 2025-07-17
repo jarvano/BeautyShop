@@ -32,8 +32,6 @@ const AppContent: React.FC = () => {
         return user?.role === 'admin' ? <InventoryManagement /> : null;
       case 'reports':
         return <ReportsManagement />;
-      case 'reports':
-        return <ReportsManagement />;
       case 'users':
         return user?.role === 'admin' ? <UsersManagement /> : null;
       case 'dashboard':

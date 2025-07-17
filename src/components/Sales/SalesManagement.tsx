@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Calendar, DollarSign, Package } from 'lucide-react';
+import { Plus, Search, Calendar, DollarSign, Package, CreditCard } from 'lucide-react';
 import { Sale, Product } from '../../types';
-import { supabase } from '../../lib/supabase';
+import { getSales, getProducts } from '../../utils/storage';
 import { useAuth } from '../../context/AuthContext';
 import AddSaleModal from './AddSaleModal';
 import SalesTable from './SalesTable';
+import { exportSalesToCSV } from '../../utils/export';
 
 const SalesManagement: React.FC = () => {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -13,7 +14,7 @@ const SalesManagement: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [employeeFilter, setEmployeeFilter] = useState('');
   const { user } = useAuth();
 
   useEffect(() => {
@@ -22,33 +23,11 @@ const SalesManagement: React.FC = () => {
 
   useEffect(() => {
     filterSales();
-  }, [sales, searchTerm, dateFilter]);
+  }, [sales, searchTerm, dateFilter, employeeFilter]);
 
-  const loadData = async () => {
-    try {
-      // Load sales
-      const { data: salesData, error: salesError } = await supabase
-        .from('sales')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (salesError) throw salesError;
-
-      // Load products
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .order('name');
-
-      if (productsError) throw productsError;
-
-      setSales(salesData || []);
-      setProducts(productsData || []);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
+  const loadData = () => {
+    setSales(getSales());
+    setProducts(getProducts());
   };
 
   const filterSales = () => {
@@ -67,65 +46,55 @@ const SalesManagement: React.FC = () => {
       );
     }
 
+    if (employeeFilter) {
+      filtered = filtered.filter(sale => sale.employee_name === employeeFilter);
+    }
+
     setFilteredSales(filtered);
   };
 
-  const handleAddSale = async (saleData: Omit<Sale, 'id' | 'created_at'>) => {
-    try {
-      // Insert sale
-      const { data: newSale, error: saleError } = await supabase
-        .from('sales')
-        .insert([saleData])
-        .select()
-        .single();
+  const handleAddSale = () => {
+    loadData();
+    setShowAddModal(false);
+  };
 
-      if (saleError) throw saleError;
-
-      // Update product stock
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({ 
-          stock_qty: supabase.sql`stock_qty - ${saleData.quantity}` 
-        })
-        .eq('id', saleData.product_id);
-
-      if (updateError) throw updateError;
-
-      // Reload data
-      await loadData();
-      setShowAddModal(false);
-    } catch (error) {
-      console.error('Error adding sale:', error);
-      alert('Error adding sale. Please try again.');
-    }
+  const handleExport = () => {
+    exportSalesToCSV(filteredSales);
   };
 
   const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.amount, 0);
   const totalItems = filteredSales.reduce((sum, sale) => sum + sale.quantity, 0);
+  
+  const paymentBreakdown = filteredSales.reduce((acc, sale) => {
+    acc[sale.payment_method] = (acc[sale.payment_method] || 0) + sale.amount;
+    return acc;
+  }, {} as Record<string, number>);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-600"></div>
-      </div>
-    );
-  }
+  const employees = [...new Set(sales.map(s => s.employee_name))];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Sales Management</h1>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Sale
-        </button>
+        <div className="flex space-x-2 mt-4 sm:mt-0">
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Sale
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center">
             <DollarSign className="w-8 h-8 text-green-600" />
@@ -153,6 +122,42 @@ const SalesManagement: React.FC = () => {
             </div>
           </div>
         </div>
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center">
+            <CreditCard className="w-8 h-8 text-orange-600" />
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Avg. Sale</p>
+              <p className="text-2xl font-bold text-gray-900">
+                ${filteredSales.length > 0 ? (totalRevenue / filteredSales.length).toFixed(2) : '0.00'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Breakdown */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">
+              ${(paymentBreakdown.cash || 0).toFixed(2)}
+            </div>
+            <div className="text-sm text-gray-600">Cash</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">
+              ${(paymentBreakdown.card || 0).toFixed(2)}
+            </div>
+            <div className="text-sm text-gray-600">Card</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">
+              ${(paymentBreakdown.mobile || 0).toFixed(2)}
+            </div>
+            <div className="text-sm text-gray-600">Mobile</div>
+          </div>
+        </div>
       </div>
 
       {/* Filters */}
@@ -174,6 +179,16 @@ const SalesManagement: React.FC = () => {
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
           />
+          <select
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            value={employeeFilter}
+            onChange={(e) => setEmployeeFilter(e.target.value)}
+          >
+            <option value="">All Employees</option>
+            {employees.map(employee => (
+              <option key={employee} value={employee}>{employee}</option>
+            ))}
+          </select>
         </div>
       </div>
 

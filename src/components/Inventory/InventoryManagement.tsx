@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit, Trash2, AlertTriangle, Package } from 'lucide-react';
 import { Product } from '../../types';
-import { supabase } from '../../lib/supabase';
+import { getProducts, addProduct, updateProduct, deleteProduct } from '../../utils/storage';
 import { useAuth } from '../../context/AuthContext';
 import AddProductModal from './AddProductModal';
 import EditProductModal from './EditProductModal';
 import ProductsTable from './ProductsTable';
+import { exportProductsToCSV } from '../../utils/export';
 
 const InventoryManagement: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -16,7 +17,6 @@ const InventoryManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [stockFilter, setStockFilter] = useState('');
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -27,20 +27,8 @@ const InventoryManagement: React.FC = () => {
     filterProducts();
   }, [products, searchTerm, categoryFilter, stockFilter]);
 
-  const loadProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error loading products:', error);
-    } finally {
-      setLoading(false);
-    }
+  const loadProducts = () => {
+    setProducts(getProducts());
   };
 
   const filterProducts = () => {
@@ -66,59 +54,25 @@ const InventoryManagement: React.FC = () => {
     setFilteredProducts(filtered);
   };
 
-  const handleAddProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .insert([productData])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      await loadProducts();
-      setShowAddModal(false);
-    } catch (error) {
-      console.error('Error adding product:', error);
-      alert('Error adding product. Please try again.');
-    }
+  const handleAddProduct = (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
+    addProduct(productData);
+    loadProducts();
+    setShowAddModal(false);
   };
 
-  const handleEditProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!editingProduct) return;
-
-    try {
-      const { error } = await supabase
-        .from('products')
-        .update(productData)
-        .eq('id', editingProduct.id);
-
-      if (error) throw error;
-
-      await loadProducts();
+  const handleEditProduct = (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
+    if (editingProduct) {
+      updateProduct(editingProduct.id, productData);
+      loadProducts();
       setShowEditModal(false);
       setEditingProduct(null);
-    } catch (error) {
-      console.error('Error updating product:', error);
-      alert('Error updating product. Please try again.');
     }
   };
 
-  const handleDeleteProduct = async (productId: string) => {
+  const handleDeleteProduct = (productId: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .delete()
-          .eq('id', productId);
-
-        if (error) throw error;
-
-        await loadProducts();
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        alert('Error deleting product. Please try again.');
-      }
+      deleteProduct(productId);
+      loadProducts();
     }
   };
 
@@ -127,29 +81,33 @@ const InventoryManagement: React.FC = () => {
     setShowEditModal(true);
   };
 
+  const handleExport = () => {
+    exportProductsToCSV(filteredProducts);
+  };
+
   const categories = [...new Set(products.map(p => p.category))];
   const lowStockItems = products.filter(p => p.stock_qty < 5);
   const outOfStockItems = products.filter(p => p.stock_qty === 0);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Product
-        </button>
+        <div className="flex space-x-2 mt-4 sm:mt-0">
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Product
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}

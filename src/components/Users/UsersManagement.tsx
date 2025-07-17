@@ -1,134 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, User, Shield, Users } from 'lucide-react';
 import { User as UserType } from '../../types';
-import { supabase } from '../../lib/supabase';
+import { getUsers, addUser, deleteUser, updateUser } from '../../utils/storage';
 import { useAuth } from '../../context/AuthContext';
 import AddUserModal from './AddUserModal';
+import EditUserModal from './EditUserModal';
 
 const UsersManagement: React.FC = () => {
   const [users, setUsers] = useState<UserType[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserType | null>(null);
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
     loadUsers();
   }, []);
 
-  const loadUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          name,
-          role,
-          created_at
-        `)
-        .order('created_at', { ascending: false });
+  const loadUsers = () => {
+    setUsers(getUsers());
+  };
 
-      if (error) throw error;
+  const handleAddUser = (userData: Omit<UserType, 'id' | 'created_at'>) => {
+    addUser(userData);
+    loadUsers();
+    setShowAddModal(false);
+  };
 
-      // Get user emails from auth.users
-      const usersWithEmails = await Promise.all(
-        (data || []).map(async (profile) => {
-          const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
-          return {
-            ...profile,
-            email: authUser.user?.email || ''
-          };
-        })
-      );
-
-      setUsers(usersWithEmails);
-    } catch (error) {
-      console.error('Error loading users:', error);
-    } finally {
-      setLoading(false);
+  const handleEditUser = (userData: Partial<UserType>) => {
+    if (editingUser) {
+      updateUser(editingUser.id, userData);
+      loadUsers();
+      setShowEditModal(false);
+      setEditingUser(null);
     }
   };
 
-  const handleAddUser = async (userData: { name: string; email: string; password: string; role: 'admin' | 'employee' }) => {
-    try {
-      // Create user in Supabase Auth with metadata
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        user_metadata: {
-          name: userData.name,
-          role: userData.role
-        },
-        email_confirm: true
-      });
-
-      if (authError) throw authError;
-
-      // Ensure profile is created with correct data (fallback if trigger fails)
-      if (authData.user) {
-        // Wait a moment for the trigger to execute
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Check if profile was created by trigger
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authData.user.id)
-          .single();
-        
-        if (!existingProfile) {
-          // Create profile manually if trigger didn't work
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-              id: authData.user.id,
-              name: userData.name,
-              role: userData.role
-            });
-          
-          if (profileError) {
-            console.error('Manual profile creation error:', profileError);
-          }
-        }
-      }
-
-      await loadUsers();
-      setShowAddModal(false);
-    } catch (error) {
-      console.error('Error adding user:', error);
-      alert('Error adding user. Please try again.');
-    }
-  };
-
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = (userId: string) => {
     if (userId === currentUser?.id) {
       alert('You cannot delete your own account');
       return;
     }
 
     if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        // Delete user using admin API (this will cascade delete the profile)
-        const { error } = await supabase.auth.admin.deleteUser(userId);
-        if (error) throw error;
-
-        await loadUsers();
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Error deleting user. Please try again.');
-      }
+      deleteUser(userId);
+      loadUsers();
     }
+  };
+
+  const handleEditClick = (user: UserType) => {
+    setEditingUser(user);
+    setShowEditModal(true);
   };
 
   const adminCount = users.filter(u => u.role === 'admin').length;
   const employeeCount = users.filter(u => u.role === 'employee').length;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -227,6 +153,12 @@ const UsersManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditClick(user)}
+                        className="text-pink-600 hover:text-pink-900 p-1"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
                       {user.id !== currentUser?.id && (
                         <button
                           onClick={() => handleDeleteUser(user.id)}
@@ -249,6 +181,18 @@ const UsersManagement: React.FC = () => {
         <AddUserModal
           onClose={() => setShowAddModal(false)}
           onSave={handleAddUser}
+        />
+      )}
+
+      {/* Edit User Modal */}
+      {showEditModal && editingUser && (
+        <EditUserModal
+          user={editingUser}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingUser(null);
+          }}
+          onSave={handleEditUser}
         />
       )}
     </div>

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { X, ShoppingCart } from 'lucide-react';
 import { Product, Sale, User } from '../../types';
+import { addSale } from '../../utils/storage';
 
 interface AddSaleModalProps {
   onClose: () => void;
-  onSave: (sale: Omit<Sale, 'id' | 'created_at'>) => void;
+  onSave: () => void;
   products: Product[];
   currentUser: User;
 }
@@ -12,6 +13,7 @@ interface AddSaleModalProps {
 const AddSaleModal: React.FC<AddSaleModalProps> = ({ onClose, onSave, products, currentUser }) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'mobile'>('cash');
 
   const handleProductSelect = (productId: string) => {
     const product = products.find(p => p.id === productId);
@@ -29,12 +31,14 @@ const AddSaleModal: React.FC<AddSaleModalProps> = ({ onClose, onSave, products, 
       product_name: selectedProduct.name,
       quantity,
       amount: totalAmount,
+      payment_method: paymentMethod,
       date: new Date().toISOString(),
       employee_id: currentUser.id,
       employee_name: currentUser.name
     };
 
-    onSave(saleData);
+    addSale(saleData);
+    onSave();
   };
 
   const isValidQuantity = selectedProduct ? quantity <= selectedProduct.stock_qty : false;
@@ -101,6 +105,22 @@ const AddSaleModal: React.FC<AddSaleModalProps> = ({ onClose, onSave, products, 
                 Quantity exceeds available stock ({selectedProduct.stock_qty})
               </p>
             )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Payment Method
+            </label>
+            <select
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'card' | 'mobile')}
+            >
+              <option value="cash">Cash</option>
+              <option value="card">Card</option>
+              <option value="mobile">Mobile Payment</option>
+            </select>
           </div>
 
           {selectedProduct && (

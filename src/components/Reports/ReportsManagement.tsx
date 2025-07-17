@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Download, TrendingUp, BarChart3, DollarSign, Package } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { Calendar, Download, TrendingUp, BarChart3, DollarSign, Package, CreditCard } from 'lucide-react';
+import { getSales, getProducts } from '../../utils/storage';
 import { Sale, Product, SalesReport } from '../../types';
+import { exportSalesToCSV, exportProductsToCSV } from '../../utils/export';
 
 const ReportsManagement: React.FC = () => {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -10,7 +11,6 @@ const ReportsManagement: React.FC = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reportType, setReportType] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('daily');
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadData();
@@ -22,28 +22,9 @@ const ReportsManagement: React.FC = () => {
     }
   }, [sales, startDate, endDate, reportType]);
 
-  const loadData = async () => {
-    try {
-      const { data: salesData, error: salesError } = await supabase
-        .from('sales')
-        .select('*')
-        .order('date', { ascending: false });
-
-      if (salesError) throw salesError;
-
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*');
-
-      if (productsError) throw productsError;
-
-      setSales(salesData || []);
-      setProducts(productsData || []);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
+  const loadData = () => {
+    setSales(getSales());
+    setProducts(getProducts());
   };
 
   const generateReport = () => {
@@ -105,11 +86,21 @@ const ReportsManagement: React.FC = () => {
 
     const topProducts = productSales.sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
+    const paymentBreakdown = filteredSales.reduce((acc, sale) => {
+      acc[sale.payment_method] = (acc[sale.payment_method] || 0) + sale.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
     return {
       totalRevenue,
       totalItems,
       totalSales,
-      topProducts
+      topProducts,
+      paymentBreakdown: {
+        cash: paymentBreakdown.cash || 0,
+        card: paymentBreakdown.card || 0,
+        mobile: paymentBreakdown.mobile || 0
+      }
     };
   };
 
@@ -120,49 +111,12 @@ const ReportsManagement: React.FC = () => {
       return saleDate >= new Date(startDate) && saleDate <= new Date(endDate);
     });
 
-    const csvContent = [
-      'Date,Product,Quantity,Amount,Employee',
-      ...filteredSales.map(sale => 
-        `${new Date(sale.date).toLocaleDateString()},${sale.product_name},${sale.quantity},${sale.amount},${sale.employee_name}`
-      )
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `sales-report-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    exportSalesToCSV(filteredSales);
   };
 
   const handleExportInventory = () => {
-    const csvContent = [
-      'Name,Category,Stock Quantity,Cost Price,Selling Price,Status',
-      ...products.map(product => 
-        `${product.name},${product.category},${product.stock_qty},${product.cost_price},${product.selling_price},${
-          product.stock_qty === 0 ? 'Out of Stock' : 
-          product.stock_qty < 5 ? 'Low Stock' : 'In Stock'
-        }`
-      )
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `inventory-report-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    exportProductsToCSV(products);
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -265,8 +219,35 @@ const ReportsManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Top Products and Inventory Status */}
+      {/* Payment Breakdown and Top Products */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h3>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-green-500 rounded mr-3"></div>
+                <span className="text-sm font-medium text-gray-900">Cash</span>
+              </div>
+              <span className="font-medium">${report?.paymentBreakdown.cash.toFixed(2) || '0.00'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-blue-500 rounded mr-3"></div>
+                <span className="text-sm font-medium text-gray-900">Card</span>
+              </div>
+              <span className="font-medium">${report?.paymentBreakdown.card.toFixed(2) || '0.00'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-purple-500 rounded mr-3"></div>
+                <span className="text-sm font-medium text-gray-900">Mobile</span>
+              </div>
+              <span className="font-medium">${report?.paymentBreakdown.mobile.toFixed(2) || '0.00'}</span>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Products</h3>
           <div className="space-y-3">
@@ -284,28 +265,29 @@ const ReportsManagement: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Inventory Status</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {products.filter(p => p.stock_qty >= 5).length}
-              </div>
-              <div className="text-sm text-gray-600">In Stock</div>
+      {/* Inventory Status */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Inventory Status</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">
+              {products.filter(p => p.stock_qty >= 5).length}
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">
-                {products.filter(p => p.stock_qty < 5 && p.stock_qty > 0).length}
-              </div>
-              <div className="text-sm text-gray-600">Low Stock</div>
+            <div className="text-sm text-gray-600">In Stock</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-yellow-600">
+              {products.filter(p => p.stock_qty < 5 && p.stock_qty > 0).length}
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
-                {products.filter(p => p.stock_qty === 0).length}
-              </div>
-              <div className="text-sm text-gray-600">Out of Stock</div>
+            <div className="text-sm text-gray-600">Low Stock</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-600">
+              {products.filter(p => p.stock_qty === 0).length}
             </div>
+            <div className="text-sm text-gray-600">Out of Stock</div>
           </div>
         </div>
       </div>

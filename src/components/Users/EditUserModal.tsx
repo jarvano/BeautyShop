@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { X, User } from 'lucide-react';
+import { User as UserType } from '../../types';
 
-interface AddUserModalProps {
+interface EditUserModalProps {
+  user: UserType;
   onClose: () => void;
-  onSave: (user: { name: string; email: string; role: 'admin' | 'employee' }) => void;
+  onSave: (user: Partial<UserType>) => void;
 }
 
-const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
+const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSave }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: 'employee' as 'admin' | 'employee'
+    name: user.name,
+    email: user.email,
+    role: user.role
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,7 +33,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <User className="w-6 h-6 text-pink-600 mr-2" />
-            <h2 className="text-xl font-bold text-gray-900">Add New User</h2>
+            <h2 className="text-xl font-bold text-gray-900">Edit User</h2>
           </div>
           <button
             onClick={onClose}
@@ -50,12 +52,10 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
               type="text"
               name="name"
               required
-              placeholder="Enter the user's display name"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={formData.name}
               onChange={handleChange}
             />
-            <p className="text-xs text-gray-500 mt-1">This name will be displayed throughout the system</p>
           </div>
 
           <div>
@@ -66,12 +66,10 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
               type="email"
               name="email"
               required
-              placeholder="Enter email address"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               value={formData.email}
               onChange={handleChange}
             />
-            <p className="text-xs text-gray-500 mt-1">This will be used for login (demo only)</p>
           </div>
 
           <div>
@@ -88,10 +86,6 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
               <option value="employee">Employee</option>
               <option value="admin">Administrator</option>
             </select>
-            <p className="text-xs text-gray-500 mt-1">
-              <span className="font-medium">Employee:</span> Can view and add sales only<br/>
-              <span className="font-medium">Administrator:</span> Full access to all features
-            </p>
           </div>
 
           <div className="flex space-x-3 pt-4">
@@ -106,7 +100,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
               type="submit"
               className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
             >
-              Add User
+              Update User
             </button>
           </div>
         </form>
@@ -115,4 +109,4 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ onClose, onSave }) => {
   );
 };
 
-export default AddUserModal;
+export default EditUserModal;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { getSales, getProducts } from '../utils/storage';
 import { TrendingUp, Package, ShoppingCart, DollarSign, AlertTriangle } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -7,41 +7,24 @@ const Dashboard: React.FC = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const [lowStockItems, setLowStockItems] = useState(0);
   const [todaysRevenue, setTodaysRevenue] = useState(0);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
 
-  const loadDashboardData = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Get today's sales
-      const { data: salesData, error: salesError } = await supabase
-        .from('sales')
-        .select('*')
-        .gte('date', `${today}T00:00:00`)
-        .lt('date', `${today}T23:59:59`);
+  const loadDashboardData = () => {
+    const sales = getSales();
+    const products = getProducts();
+    
+    const today = new Date().toDateString();
+    const todaySales = sales.filter(sale => 
+      new Date(sale.date).toDateString() === today
+    );
 
-      if (salesError) throw salesError;
-
-      // Get products
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*');
-
-      if (productsError) throw productsError;
-
-      setTodaysSales(salesData?.length || 0);
-      setTotalProducts(productsData?.length || 0);
-      setLowStockItems(productsData?.filter(p => p.stock_qty < 5).length || 0);
-      setTodaysRevenue(salesData?.reduce((sum, sale) => sum + sale.amount, 0) || 0);
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
+    setTodaysSales(todaySales.length);
+    setTotalProducts(products.length);
+    setLowStockItems(products.filter(p => p.stock_qty < 5).length);
+    setTodaysRevenue(todaySales.reduce((sum, sale) => sum + sale.amount, 0));
   };
 
   const stats = [
@@ -74,14 +57,6 @@ const Dashboard: React.FC = () => {
       bgColor: 'bg-red-100'
     }
   ];
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

@@ -14,6 +14,19 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
     );
   }
 
+  const getPaymentMethodColor = (method: string) => {
+    switch (method) {
+      case 'cash':
+        return 'bg-green-100 text-green-800';
+      case 'card':
+        return 'bg-blue-100 text-blue-800';
+      case 'mobile':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
@@ -31,6 +44,9 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Amount
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Payment
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Employee
@@ -51,6 +67,11 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   ${sale.amount.toFixed(2)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentMethodColor(sale.payment_method)}`}>
+                    {sale.payment_method.charAt(0).toUpperCase() + sale.payment_method.slice(1)}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {sale.employee_name}
