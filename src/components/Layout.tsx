@@ -26,11 +26,11 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, setCurrentPage }
   const navigation = [
     { name: 'Dashboard', icon: Home, key: 'dashboard' },
     { name: 'Sales', icon: ShoppingCart, key: 'sales' },
+    { name: 'Reports', icon: BarChart3, key: 'reports' },
     ...(user?.role === 'admin' ? [
       { name: 'Inventory', icon: Package, key: 'inventory' },
       { name: 'Users', icon: Users, key: 'users' }
-    ] : []),
-    { name: 'Reports', icon: BarChart3, key: 'reports' }
+    ] : [])
   ];
 
   return (

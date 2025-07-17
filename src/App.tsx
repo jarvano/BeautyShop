@@ -29,11 +29,14 @@ const AppContent: React.FC = () => {
       case 'sales':
         return <SalesManagement />;
       case 'inventory':
-        return user?.role === 'admin' ? <InventoryManagement /> : <Dashboard />;
+        return user?.role === 'admin' ? <InventoryManagement /> : null;
+      case 'reports':
+        return <ReportsManagement />;
       case 'reports':
         return <ReportsManagement />;
       case 'users':
-        return user?.role === 'admin' ? <UsersManagement /> : <Dashboard />;
+        return user?.role === 'admin' ? <UsersManagement /> : null;
+      case 'dashboard':
       default:
         return <Dashboard />;
     }
